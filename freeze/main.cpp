@@ -8,11 +8,14 @@ typedef LONG(NTAPI* _NtResumeProcess)(IN HANDLE ProcessHandle);
 HHOOK g_Hook = NULL;
 HHOOK g_MouseHook = NULL;
 HANDLE ProcessHandle = 0;
+HMODULE ntdll = 0;
+#define LAST_MINUTES 60 //max last time
+
 ULONGLONG press_a = 0;
 ULONGLONG press_b = 200;
-HMODULE ntdll = 0;
+ULONGLONG start_time = GetTickCount64();
 
-void EnableDebugPriv(){
+void EnableDebugPriv() {
 	HANDLE hToken;
 	LUID luid;
 	TOKEN_PRIVILEGES tkp;
@@ -25,13 +28,13 @@ void EnableDebugPriv(){
 	CloseHandle(hToken);
 }
 
-LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam){
+LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode == 0) return 1;
 	return CallNextHookEx(g_MouseHook, nCode, wParam, lParam);
 }
 
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-	if (nCode == HC_ACTION && wParam == WM_KEYDOWN){
+	if (nCode == HC_ACTION && wParam == WM_KEYDOWN) {
 		LPKBDLLHOOKSTRUCT pKbs = (LPKBDLLHOOKSTRUCT)lParam;
 		// https://www.millisecond.com/support/docs/v6/html/language/scancodes.htm
 		if (pKbs->scanCode == 0x2a) { //LShift
@@ -40,13 +43,12 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 		else if (pKbs->scanCode == 0x36) { //RShift
 			press_b = GetTickCount64();
 		}
-		if (max(press_a, press_b) - min(press_a, press_b) < 100) {
+		if ((max(press_a, press_b) - min(press_a, press_b) < 100) || (GetTickCount64() - start_time > 1000 * 60 * LAST_MINUTES)) {
 			((_NtResumeProcess)GetProcAddress(ntdll, "NtResumeProcess"))(ProcessHandle);
 			exit(0);
 		}
 	}
-
-	if (nCode >= 0)  return 1; 
+	if (nCode >= 0)  return 1;
 	else return CallNextHookEx(g_Hook, nCode, wParam, lParam);
 }
 
@@ -54,14 +56,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-DWORD FindProcessId(const std::wstring& processName){
+DWORD FindProcessId(const std::wstring& processName) {
 	PROCESSENTRY32 processInfo;
 	processInfo.dwSize = sizeof(processInfo);
 	HANDLE processesSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 	if (processesSnapshot == INVALID_HANDLE_VALUE)return 0;
 	Process32First(processesSnapshot, &processInfo);
-	while (Process32Next(processesSnapshot, &processInfo)){
-		if (!processName.compare(processInfo.szExeFile)){
+	while (Process32Next(processesSnapshot, &processInfo)) {
+		if (!processName.compare(processInfo.szExeFile)) {
 			CloseHandle(processesSnapshot);
 			return processInfo.th32ProcessID;
 		}
