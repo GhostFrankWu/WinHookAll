@@ -21,23 +21,8 @@ g_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseProc, hInstance, 0);
 ProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, FindProcessId(L"winlogon.exe"));
 ```
 
-按下通过指定组合键可以恢复（默认为同时按下左右shift）
-```cpp
-if (nCode == HC_ACTION && wParam == WM_KEYDOWN){
-		LPKBDLLHOOKSTRUCT pKbs = (LPKBDLLHOOKSTRUCT)lParam;
-		// https://www.millisecond.com/support/docs/v6/html/language/scancodes.htm
-		if (pKbs->scanCode == 0x2a) { //LShift
-			press_a = GetTickCount64();
-		}
-		else if (pKbs->scanCode == 0x36) { //RShift
-			press_b = GetTickCount64();
-		}
-		if (max(press_a, press_b) - min(press_a, press_b) < 100) {
-			((_NtResumeProcess)GetProcAddress(ntdll, "NtResumeProcess"))(ProcessHandle);
-			exit(0);
-		}
-	}
-```
+按下通过指定组合键可以恢复（默认为同时按下左右shift）  
+超时后按任意键恢复（在开头的宏定义中指定限制）
 
 ## 特性
 | 特点 | 实现 |
@@ -49,4 +34,4 @@ if (nCode == HC_ACTION && wParam == WM_KEYDOWN){
 屏蔽开机键 | x
 -- | -- 
 按下指定键恢复 | √
-定时恢复 | x
+定时恢复 | √
