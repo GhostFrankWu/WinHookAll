@@ -32,6 +32,13 @@ ProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, FindProcessId(L"winlogon.
 屏蔽ctrl + alt + del | √
 屏蔽任意组合键 | 未验证
 屏蔽开机键 | x
+win+g | x
+function | x
+滑动触控板 | x
 -- | -- 
 按下指定键恢复 | √
 定时恢复 | √
+
+## todo
+处理win+任意键的热键
+处理触控设备
